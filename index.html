@@ -6958,7 +6958,7 @@ function visibleGames(){
 function renderGamePure(){
   const gs = visibleGames();
   const el = document.getElementById('gamePureBars');
-  document.getElementById('topNSub').textContent = '전체 게임 중 순수구매자수 TOP20 게임';
+  document.getElementById('topNSub').textContent = `전체 게임 중 순수구매자수 상위 ${state.topN}개 · 전체기간 · 게임 내 중복제거 (게임 간 중복 포함)`;
   if(!gs.length){ el.innerHTML = `<div class="empty">선택된 게임이 없습니다.</div>`; return; }
   const max = Math.max(...gs.map(g=>g.pure));
   el.innerHTML = gs.map(g=>`
@@ -6973,7 +6973,7 @@ function renderGamePure(){
 function renderGameRes(){
   const gs = GAMES_RES.slice(0, state.topN);
   const el = document.getElementById('gameResBars');
-  document.getElementById('resSub').textContent = '전체 게임 중 리셀러수 TOP20 게임';
+  document.getElementById('resSub').textContent = `전체 게임 중 리셀러수 상위 ${state.topN}개 · 전체기간 · 게임 내 중복제거 (게임 간 중복 포함)`;
   if(!gs.length){ el.innerHTML = `<div class="empty">선택된 게임이 없습니다.</div>`; return; }
   const max = Math.max(...gs.map(g=>g.res));
   el.style.height = '';
@@ -7180,7 +7180,7 @@ function renderOv(){
   const maxR=Math.max(...rows.map(r=>r.res))||1;
   let pure=0,res=0; rows.forEach(r=>{pure+=r.pure;res+=r.res;});
   document.getElementById('ovPeriodLabel').textContent=ovPeriodLabel();
-  document.getElementById('ovSub').textContent=ovIsMonth()?`20${MONTHS[ovState.cur]} · 전체 게임`:`전체 기간 · 전체 ${OV_GAMES.length}개 게임`;
+  document.getElementById('ovSub').textContent=ovIsMonth()?`20${MONTHS[ovState.cur]} · 전체 게임 · 게임 내 중복제거 (게임 간 중복 포함)`:`전체 기간 · 전체 ${OV_GAMES.length}개 게임 · 게임 내 중복제거 (게임 간 중복 포함)`;
   document.getElementById('ovPure').textContent=fmt(pure)+'명';
   document.getElementById('ovRes').textContent=fmt(res)+'명';
   document.getElementById('ovRatio').textContent=((pure+res)?res/(pure+res)*100:0).toFixed(1)+'%';
