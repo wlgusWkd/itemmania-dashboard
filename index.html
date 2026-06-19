@@ -7065,7 +7065,7 @@ function renderDetail(){
   if(!rows.length){ body.innerHTML = `<tr><td colspan="4" class="empty">조건에 맞는 데이터가 없습니다.</td></tr>`; updateSortArrows('detailTable', state.detailSort); return; }
   body.innerHTML = rows.map((r,i)=>`
     <tr>
-      <td class="idx">${i}</td>
+      <td class="idx">${r.ym==='전체 기간'?'':i}</td>
       <td>${r.ym}</td>
       <td class="game">${r.game}</td>
       <td class="num">${fmt(r.cnt)}</td>
