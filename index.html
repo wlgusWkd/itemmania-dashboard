@@ -249,8 +249,6 @@
   .ov-stepper button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:16px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center}
   .ov-stepper button:disabled{opacity:.35;cursor:default}
   .ov-cur{font-size:15px;font-weight:800;min-width:72px;text-align:center}
-  .ov-summary{display:flex;gap:18px;flex-wrap:wrap;padding:10px 0 14px;border-bottom:1px solid var(--line);margin-bottom:10px;font-size:13px;font-weight:600;color:var(--text2)}
-  .ov-summary b{font-size:14px;font-weight:800;margin-left:3px;color:var(--text)}
   .ov-sv-pure b{color:#22B573} .ov-sv-res b{color:#3182F6}
   .ov-bars-head,.ov-bar-row{display:grid;grid-template-columns:22px 110px 1.3fr 0.9fr 54px;align-items:center;gap:10px}
   .ov-bars-head{padding:0 4px 8px;border-bottom:1px solid var(--line);font-size:11px;color:var(--text3);font-weight:700}
@@ -259,6 +257,9 @@
   .ov-bar-row+.ov-bar-row{border-top:1px solid var(--line-soft)}
   .ov-rank{font-size:12px;font-weight:800;color:var(--text3);text-align:center}
   .ov-bar-row:nth-child(-n+4) .ov-rank{color:#3182F6}
+  .ov-bar-row--total{background:rgba(49,130,246,0.06);border-radius:6px;margin-bottom:6px;border-left:3px solid #3182F6}
+  .ov-bar-row--total .ov-rank{font-size:10px;font-weight:900;color:#3182F6;letter-spacing:-0.3px}
+  .ov-bar-row--total+.ov-bar-row{border-top:2px solid var(--line)}
   .ov-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ov-bar{display:flex;align-items:center;gap:7px;min-width:0}
   .ov-fill{height:18px;border-radius:5px;min-width:2px;transition:width .35s cubic-bezier(.2,.7,.3,1)}
@@ -453,12 +454,6 @@
               <button data-k="ratio">비율</button>
             </div>
           </div>
-        </div>
-        <div class="ov-summary">
-          <span id="ovPeriodLabel" style="font-weight:800;font-size:14px"></span>
-          <span class="ov-sv-pure">순수 구매자<b id="ovPure">-</b></span>
-          <span class="ov-sv-res">리셀러<b id="ovRes">-</b></span>
-          <span>평균 리셀러 비율<b id="ovRatio">-</b></span>
         </div>
         <div class="ov-bars-head">
           <div></div><div>게임</div><div>순수 구매자</div><div>리셀러</div><div class="r">비율</div>
@@ -7050,8 +7045,17 @@ function detailRows(){
   const gs = GAMES.filter(g=>state.selected.has(g.name));
   const rows = [];
   idx.forEach(mi=>{
-    gs.forEach(g=>{ rows.push({ym:'20'+MONTHS[mi].replace('.','-'), game:g.name, cnt:heatValue(g,mi)}); });
+    gs.forEach(g=>{
+      if(g.name.startsWith('전체합계')) return;
+      rows.push({ym:'20'+MONTHS[mi].replace('.','-'), game:g.name, cnt:heatValue(g,mi)});
+    });
   });
+  const totalGame = gs.find(g=>g.name.startsWith('전체합계'));
+  if(totalGame){
+    const d = HEAT_DATA[totalGame.name];
+    const totalCnt = d ? (d[MONTHS.length] || totalGame.pure) : totalGame.pure;
+    rows.unshift({ym:'전체 기간', game:totalGame.name, cnt:totalCnt});
+  }
   return rows;
 }
 function renderDetail(){
@@ -7162,7 +7166,10 @@ function ovGameVal(game){
 function ovGetRows(){
   const rows=OV_GAMES.map(name=>{const d=ovGameVal(name);const ratio=(d.pure+d.res)?d.res/(d.pure+d.res)*100:0;return {name,pure:d.pure,res:d.res,ratio};});
   const k=ovState.sort;
-  return rows.sort((a,b)=>k==='ratio'?b.ratio-a.ratio:k==='res'?b.res-a.res:b.pure-a.pure);
+  const totalRow=rows.find(r=>r.name.startsWith('전체합계'));
+  const gameRows=rows.filter(r=>!r.name.startsWith('전체합계'));
+  gameRows.sort((a,b)=>k==='ratio'?b.ratio-a.ratio:k==='res'?b.res-a.res:b.pure-a.pure);
+  return totalRow?[totalRow,...gameRows]:gameRows;
 }
 function ovRatioClass(r){return r<3.5?'lo':r<6?'mid':'hi';}
 function ovYearRange(y){const idx=MONTHS.map((m,i)=>('20'+m).slice(0,4)===y?i:-1).filter(i=>i>=0);return idx.length?[idx[0],idx[idx.length-1]]:null;}
@@ -7178,12 +7185,7 @@ function renderOv(){
   const rows=ovGetRows();
   const maxP=Math.max(...rows.map(r=>r.pure))||1;
   const maxR=Math.max(...rows.map(r=>r.res))||1;
-  let pure=0,res=0; rows.forEach(r=>{pure+=r.pure;res+=r.res;});
-  document.getElementById('ovPeriodLabel').textContent=ovPeriodLabel();
   document.getElementById('ovSub').textContent=ovIsMonth()?`20${MONTHS[ovState.cur]} · 전체 게임 · 게임 내 중복제거 (게임 간 중복 포함)`:`전체 기간 · 전체 ${OV_GAMES.length}개 게임 · 게임 내 중복제거 (게임 간 중복 포함)`;
-  document.getElementById('ovPure').textContent=fmt(pure)+'명';
-  document.getElementById('ovRes').textContent=fmt(res)+'명';
-  document.getElementById('ovRatio').textContent=((pure+res)?res/(pure+res)*100:0).toFixed(1)+'%';
   const stepper=document.getElementById('ovStepper');
   stepper.style.display=ovIsMonth()?'flex':'none';
   if(ovIsMonth()){
@@ -7193,14 +7195,19 @@ function renderOv(){
   }
   document.querySelectorAll('#ovPeriodSeg button').forEach(b=>b.classList.toggle('on',b.dataset.p===ovState.period));
   document.querySelectorAll('#ovSortSeg button').forEach(b=>b.classList.toggle('on',b.dataset.k===ovState.sort));
-  document.getElementById('ovBars').innerHTML=rows.map((r,i)=>`
-    <div class="ov-bar-row">
-      <div class="ov-rank">${i+1}</div>
+  let rank=1;
+  document.getElementById('ovBars').innerHTML=rows.map(r=>{
+    const isTotal=r.name.startsWith('전체합계');
+    const rankDisplay=isTotal?'전체':rank++;
+    return `
+    <div class="ov-bar-row${isTotal?' ov-bar-row--total':''}">
+      <div class="ov-rank">${rankDisplay}</div>
       <div class="ov-name" title="${r.name}">${r.name}</div>
       <div class="ov-bar"><div class="ov-fill ov-fill-pure" style="width:${(r.pure/maxP*100).toFixed(1)}%"></div><span class="ov-num ov-num-pure">${fmt(r.pure)}</span></div>
       <div class="ov-bar"><div class="ov-fill ov-fill-res" style="width:${(r.res/maxR*100).toFixed(1)}%"></div><span class="ov-num ov-num-res">${fmt(r.res)}</span></div>
       <div class="ov-ratio ov-ratio-${ovRatioClass(r.ratio)}">${r.ratio.toFixed(1)}%</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 document.querySelectorAll('#ovPeriodSeg button').forEach(b=>b.addEventListener('click',()=>{
   const p=b.dataset.p; ovState.period=p;
